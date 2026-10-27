@@ -1,0 +1,28 @@
+{
+  "name": "zhang-content-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "test": "node --test tests-v01/*.test.mjs",
+    "check": "node --check server.mjs && node --check backend/store.mjs && node --check backend/http.mjs && node --check backend/collector.mjs && node --check backend/model.mjs",
+    "test:browser": "playwright test -c playwright.v01.config.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.11.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "vite": "^8.3.5"
+  },
+  "description": "本地 AI 科普选题工作台：多平台采集、自动初筛、证据研判与 SQLite 持久化",
+  "engines": {
+    "node": ">=24"
+  },
+  "license": "UNLICENSED"
+}

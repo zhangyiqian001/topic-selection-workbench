@@ -1,0 +1,3 @@
+import {defineConfig} from '@playwright/test';
+import path from 'node:path';
+export default defineConfig({testDir:'./tests-v01',testMatch:'*.spec.js',workers:1,timeout:35000,use:{baseURL:'http://127.0.0.1:4174',viewport:{width:1440,height:1050},headless:true,launchOptions:{executablePath:process.env.CHROME_PATH||'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'}},webServer:{command:'node server.mjs',url:'http://127.0.0.1:4174/api/state',reuseExistingServer:false,env:{PORT:'4174',STUDIO_DATA_DIR:path.resolve('work/e2e-'+Date.now()),STUDIO_NO_SCHEDULE:'1'},timeout:10000},reporter:'list'});

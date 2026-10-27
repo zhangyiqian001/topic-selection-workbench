@@ -1,0 +1,4 @@
+import {test,expect} from '@playwright/test';
+test('vendor RSSHub sources, dedicated collection and shared instance setting are visible',async({page})=>{
+ await page.goto('/#sources');await expect(page.locator('.source-card').filter({hasText:'RSSHub ·'})).toHaveCount(7);await expect(page.locator('.source-card').filter({hasText:'豆包 · Seed 官方开源项目'})).toContainText('不等同豆包 App 公告');let posted;await page.route('**/api/collect',async route=>{posted=route.request().postDataJSON();await route.fulfill({json:{runs:[]}});});await page.getByRole('button',{name:'采集厂商订阅',exact:true}).click();await expect.poll(()=>posted?.platform).toBe('RSSHub');await page.goto('/#inbox');await page.locator('.platform-pills').getByRole('button',{name:/厂商订阅/}).click();await expect(page.getByLabel('按来源筛选').locator('option')).toHaveCount(8);await page.goto('/#settings');await expect(page.getByLabel('RSSHub 实例地址')).toHaveValue('https://rsshub.bestblogs.dev');
+});

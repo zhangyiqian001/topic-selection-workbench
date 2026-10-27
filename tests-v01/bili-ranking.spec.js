@@ -1,0 +1,5 @@
+import {test,expect} from '@playwright/test';
+test('Bilibili rank source exposes channel selection and stays in Bilibili collection scope',async({page})=>{
+ await page.goto('/#sources');const card=page.locator('.source-card').filter({has:page.getByRole('heading',{name:'B站 · 各分区排行榜',exact:true})});await expect(card).toContainText('非一日新增榜');await card.getByRole('button',{name:'编辑',exact:true}).click();await page.getByLabel('排行榜分区（逗号分隔）').fill('科技数码,美食');await page.getByRole('button',{name:'保存来源',exact:true}).click();await expect(card).toContainText('科技数码,美食');
+ let posted;await page.route('**/api/collect',async route=>{posted=route.request().postDataJSON();await route.fulfill({json:{runs:[]}});});await page.goto('/#inbox');await page.locator('.platform-pills').getByRole('button',{name:/^B站/}).click();await expect(page.getByLabel('按来源筛选').locator('option')).toHaveCount(3);await expect(page.getByLabel('按来源筛选').locator('option').filter({hasText:'B站 · 各分区排行榜'})).toHaveCount(1);await page.getByRole('button',{name:'采集B站来源',exact:true}).first().click();await expect.poll(()=>posted?.platform).toBe('B站');
+});
