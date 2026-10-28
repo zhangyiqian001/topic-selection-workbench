@@ -1,3 +1,4 @@
+import {networkPolicy,printNetwork} from './network.mjs';
 import {RSSHUB_PRESETS} from './rsshub.mjs';
 import {SCREEN_DIMENSIONS} from './assessment.mjs';
 import http from 'node:http';
@@ -11,17 +12,17 @@ import {PLATFORM_PRESETS,parsePlatformImport} from './platforms.mjs';
 import {RUNTIME} from './runtime.mjs';
 import {TOPIC_STATUSES,RAW_STATUSES,DIMENSIONS} from './constants.mjs';
 const root=path.dirname(path.dirname(fileURLToPath(import.meta.url))),port=Number(process.env.PORT||4173),dataDir=process.env.STUDIO_DATA_DIR||path.join(root,'data');
+const network=networkPolicy({lan:process.env.STUDIO_LAN==='1',port});
 const store=new Store(dataDir),collector=new Collector(store);let restoring=false;
 function send(res,data,status=200){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));}
 async function body(req){let bytes=0,parts=[];for await(const chunk of req){bytes+=chunk.length;if(bytes>30*1024*1024)throw new Error('请求超过 30MB 限制');parts.push(chunk);}try{return JSON.parse(Buffer.concat(parts).toString('utf8')||'{}');}catch{throw new Error('请求内容必须为有效 JSON');}}
 const server=http.createServer(async(req,res)=>{try{
- if(!['127.0.0.1','localhost','[::1]'].includes(new URL('http://'+req.headers.host).hostname)){send(res,{error:'仅支持本机访问'},403);return;}
- if(req.headers.origin&&!['http://127.0.0.1:'+port,'http://localhost:'+port].includes(req.headers.origin)){send(res,{error:'不允许跨来源操作'},403);return;}
+ const networkError=network.check(req.headers,req.socket.remoteAddress);if(networkError){send(res,{error:networkError},403);return;}
  const url=new URL(req.url,'http://127.0.0.1'),p=url.pathname;
  if(p.startsWith('/api/')){
   if(restoring){send(res,{error:'正在恢复备份，请稍后'},409);return;}
   const data=req.method==='GET'?{}:await body(req);
-  if(p==='/api/state'&&req.method==='GET'){send(res,{...store.bundle(),runtime:RUNTIME,constants:{topic_statuses:TOPIC_STATUSES,raw_statuses:RAW_STATUSES,dimensions:DIMENSIONS,screening_dimensions:SCREEN_DIMENSIONS,rsshub_presets:RSSHUB_PRESETS,platform_presets:PLATFORM_PRESETS}});return;}
+  if(p==='/api/state'&&req.method==='GET'){send(res,{...store.bundle(),runtime:{...RUNTIME,network:{lan_enabled:network.lan_enabled,listen_host:network.listen_host,local_url:network.local_url,lan_urls:network.lan_urls}},constants:{topic_statuses:TOPIC_STATUSES,raw_statuses:RAW_STATUSES,dimensions:DIMENSIONS,screening_dimensions:SCREEN_DIMENSIONS,rsshub_presets:RSSHUB_PRESETS,platform_presets:PLATFORM_PRESETS}});return;}
   if(p==='/api/raw'&&req.method==='POST'){send(res,store.addRaw(data));return;}
   const raw=p.match(/^\/api\/raw\/([^/]+)$/);
   if(raw){if(req.method==='GET')send(res,store.rawDetail(raw[1]));else if(req.method==='PUT'){store.updateRaw(raw[1],data);send(res,{ok:true});}else if(req.method==='DELETE'){store.run('DELETE FROM raw_items WHERE id=?',raw[1]);send(res,{ok:true});}else send(res,{error:'不支持的方法'},405);return;}
@@ -55,5 +56,5 @@ const server=http.createServer(async(req,res)=>{try{
  const file=path.join(root,'dist',name);try{const content=await fs.readFile(file);res.writeHead(200,{'Content-Type':{'.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.html':'text/html; charset=utf-8','.svg':'image/svg+xml'}[path.extname(file)]||'application/octet-stream','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(content);}catch{res.writeHead(503,{'Content-Type':'text/plain; charset=utf-8'});res.end('Please run npm run build, then restart the studio.');}
  }catch(error){if(!res.headersSent)send(res,{error:error.message},400);else res.end();}});
 server.on('error',error=>{console.error(error.code==='EADDRINUSE'?'Port is in use. Close the previous studio window first.':error.message);process.exitCode=1;});
-server.listen(port,'127.0.0.1',()=>{console.log(`Content Studio: http://127.0.0.1:${port}`);if(process.env.STUDIO_NO_SCHEDULE!=='1')collector.start();if(store.settings().auto_backup){const last=store.one("SELECT value FROM settings WHERE key='last_auto_backup'");if(!last||JSON.parse(last.value)!==new Date().toISOString().slice(0,10)){store.backup();store.run('INSERT OR REPLACE INTO settings VALUES (?,?)','last_auto_backup',JSON.stringify(new Date().toISOString().slice(0,10)));}}});
+server.listen(port,network.listen_host,()=>{printNetwork(network);if(process.env.STUDIO_NO_SCHEDULE!=='1')collector.start();if(store.settings().auto_backup){const last=store.one("SELECT value FROM settings WHERE key='last_auto_backup'");if(!last||JSON.parse(last.value)!==new Date().toISOString().slice(0,10)){store.backup();store.run('INSERT OR REPLACE INTO settings VALUES (?,?)','last_auto_backup',JSON.stringify(new Date().toISOString().slice(0,10)));}}});
 function shutdown(){collector.stop();server.close(()=>{store.close();process.exit(0);});setTimeout(()=>process.exit(0),3000).unref();}process.on('SIGINT',shutdown);process.on('SIGTERM',shutdown);

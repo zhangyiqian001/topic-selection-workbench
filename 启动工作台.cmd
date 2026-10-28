@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set "STUDIO_LAN=1"
 cd /d "%~dp0"
 where node >nul 2>nul
 if errorlevel 1 (
@@ -40,7 +41,9 @@ if errorlevel 10 (
   exit /b 0
 )
 echo Zhang AI Topic Studio - SQLite Edition
-echo Open http://127.0.0.1:4173 in your browser.
+echo Local and LAN URLs are printed below.
+echo Use a LAN URL from another device on the same network.
+echo If Windows Firewall asks, allow Node.js on Private networks.
 echo Keep this window open. Press Ctrl+C to stop.
 node server.mjs
 if errorlevel 1 pause

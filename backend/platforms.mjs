@@ -1,3 +1,4 @@
+import {XHS_INDEX_URL,XHS_INDEX_DEFAULTS} from './xhs-index.mjs';
 import {BILI_RANK_URL} from './bili-ranking.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -7,8 +8,9 @@ import {parseXhsPublic,XHS_PUBLIC_URL} from './xhs-public.mjs';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 const exec=promisify(execFile),vendor=path.join(path.dirname(fileURLToPath(import.meta.url)),'vendor','douyin');
-export const PLATFORM_TYPES=['douyin','douyin_daily','bilibili','bilibili_ranking','xiaohongshu','xiaohongshu_public'];
+export const PLATFORM_TYPES=['douyin','douyin_daily','bilibili','bilibili_ranking','xiaohongshu','xiaohongshu_public','xiaohongshu_index'];
 export const PLATFORM_PRESETS=[
+ {name:'小红书 · 多领域笔记线索',type:'xiaohongshu_index',url:XHS_INDEX_URL,query:XHS_INDEX_DEFAULTS,frequency_minutes:1440},
  {name:'B站 · 各分区排行榜',type:'bilibili_ranking',url:BILI_RANK_URL,query:'全部',frequency_minutes:240},
  {name:'小红书 · 热点灵感（公开快照）',type:'xiaohongshu_public',url:XHS_PUBLIC_URL,query:'',frequency_minutes:1440},
  {name:'抖音 · 实时热点榜',type:'douyin',url:'https://so-landing.douyin.com/aweme/v1/hot/search/list/',query:'',frequency_minutes:240},
@@ -22,7 +24,7 @@ const num=v=>v!==''&&v!==null&&v!==undefined&&Number.isFinite(Number(v))?Number(
 const timestamp=v=>{if(!v)return '';const n=typeof v==='number'?v:typeof v==='string'&&/^\d{10,13}$/.test(v)?Number(v):null;const t=n!==null?(n<1e12?n*1000:n):Date.parse(String(v).includes('T')?v:String(v).replace(' ','T')+'+08:00');return Number.isFinite(t)?new Date(t).toISOString():'';};
 const compact=obj=>Object.fromEntries(Object.entries(obj).filter(([,v])=>v!==null&&v!==undefined));
 const current=()=>new Date().toISOString();
-export function platformOf(type){if(type==='rsshub')return 'RSSHub';return type==='douyin'||type==='douyin_daily'?'抖音':['bilibili','bilibili_ranking'].includes(type)?'B站':['xiaohongshu','xiaohongshu_public'].includes(type)?'小红书':'';}
+export function platformOf(type){if(type==='rsshub')return 'RSSHub';return type==='douyin'||type==='douyin_daily'?'抖音':['bilibili','bilibili_ranking'].includes(type)?'B站':['xiaohongshu','xiaohongshu_public','xiaohongshu_index'].includes(type)?'小红书':'';}
 export function parsePlatform(body,type){const data=typeof body==='string'?JSON.parse(body):body,checked=current();
  if(type==='douyin'){
   if(data.status_code!==0)throw new Error('抖音返回错误状态，未取得榜单');
