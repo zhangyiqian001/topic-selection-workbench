@@ -19,3 +19,6 @@ Thumbs.db
 .idea/
 .vscode/
 coverage/
+
+# workflow 需要 workflow scope，首次推送暂不上传
+.github/workflows/
