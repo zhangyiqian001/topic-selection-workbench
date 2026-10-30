@@ -1,0 +1,10 @@
+import AIScoring from './ai-scoring.jsx';
+import ModelSettings from './model-settings.jsx';
+import React,{useEffect,useState} from 'react';
+async function api(path,body){const r=await fetch('/api/model-monitor/'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok)throw new Error(d.error||'请求失败');return d;}
+export default function ModelMonitor({settings,mutate,raw}){const [state,setState]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ async function refresh(){setBusy(true);setError('');try{setState(await api('state'));}catch(e){setError(e.message);}finally{setBusy(false);}}
+ useEffect(()=>{refresh();},[]);
+ const platforms=state?.platforms||[],configured=platforms.filter(p=>p.has_key);
+ return <><header className="page-head"><div><h1>AI 服务</h1><p>连接你的免费 API 监控台，查看平台配置、模型列表和实际检测结果。</p></div><button className="btn primary" onClick={refresh} disabled={busy}>{busy?'处理中…':'刷新连接状态'}</button></header><ModelSettings settings={settings} mutate={mutate}/><AIScoring raw={raw} mutate={mutate}/>{error&&<div className="error-note" role="alert">{error}</div>}<section className="card detail-section"><div className="card-head"><h2>免费 API 监控台</h2><span className={'tag '+(state?.connected?'green':'orange')}>{state?state.connected?'服务已连接':'未连接':'正在连接'}</span></div><div className="detail-body"><div className="monitor-stats"><div>平台数量 <strong>{platforms.length}</strong></div><div>已配置 Key <strong>{configured.length}</strong></div><div>最近检测正常 <strong>{platforms.filter(p=>p.status==='healthy').length}</strong></div></div><p className="notice">{state?.connected?(configured.length?'平台配置已读取；检测正常仅代表监控台的健康检查结果。':'尚未配置任何 API Key。请先打开监控台，在平台管理中添加你自己的 Key 并启用平台。'):state?.error||'正在读取服务状态。'} 统一 API 服务已支持内容生成；请在本页选择“自动切换网关”，再到选题创作台使用 AI 生成。</p><a className="btn" href={state?.url||'http://127.0.0.1:3000'} target="_blank" rel="noreferrer">打开监控台配置</a><p className="muted">此链接需在运行监控台的电脑上打开；工作台通过后端读取状态，不读取或传递你的完整 Key。</p></div></section></>;
+}
