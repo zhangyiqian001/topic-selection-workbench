@@ -18,7 +18,7 @@ test('automatic screening gives complete scores with explicit priors and materia
  raw=s.bundle().raw;assert.ok(raw.find(r=>r.id===a.id).assessment.total>raw.find(r=>r.id===b.id).assessment.total);
  s.updateSettings({screening_weights:{relevance:0,practical:0,attention:100,freshness:0,evidence:0}});
  raw=s.bundle().raw;assert.ok(raw.find(r=>r.id===b.id).assessment.total>raw.find(r=>r.id===a.id).assessment.total);
- const topic=s.saveTopic({title:'AI 教程',evidence_ids:[a.id],apply_rule_scores:true});assert.equal(s.topicDetail(topic).scores.length,6);assert.equal(s.topicDetail(topic).screening.version,2);
+ const topic=s.saveTopic({title:'领域教程',evidence_ids:[a.id],apply_rule_scores:true});assert.equal(s.topicDetail(topic).scores.length,6);assert.equal(s.topicDetail(topic).screening.version,3);
  assert.throws(()=>s.updateSettings({screening_weights:{relevance:NaN}}),/权重/);
  }finally{s.close();}
 });
@@ -28,10 +28,10 @@ test('unequal dimension values respond to weights while human overrides rule and
  assert.equal(computeScore([...scores,{dimension:'value',value:2,reason:'人工核验',actor:'human'},{dimension:'value',value:5,reason:'AI建议',actor:'ai'}],{value:100,heat:0,visual:0,difference:0,timely:0,cost:0}).total,40);
 });
 
-test('irrelevant viral items are capped, missing metrics use disclosed priors, fresh snapshots cannot refresh old news',()=>{
- const clock=Date.parse('2026-10-27T00:00:00Z'),settings={...DEFAULT_SETTINGS,screening_weights:SCREEN_WEIGHTS};
+test('unrelated items get low domain match, missing metrics use disclosed priors, fresh snapshots cannot refresh old news',()=>{
+ const clock=Date.parse('2026-10-27T00:00:00Z'),settings={...DEFAULT_SETTINGS,keywords:'AI,教程',screening_weights:SCREEN_WEIGHTS};
  const raw={title:'明星演唱会',summary:'',url:'https://example.com/event',metrics:{platform:'抖音',rank:1,board:'热榜',snapshot_at:'2026-10-27T00:00:00Z'}};
- const result=assessRaw(raw,[raw,{metrics:{...raw.metrics,rank:50}}],settings,clock);assert.ok(result.total<=25);assert.ok(result.adjustment);assert.equal(result.contributions.freshness.estimated,true);
- const unknown=assessRaw({title:'ChatGPT 教程',metrics:{}},[],settings,clock);assert.equal(unknown.complete,true);assert.equal(unknown.contributions.attention.value,2.5);assert.equal(unknown.contributions.attention.estimated,true);assert.ok(unknown.coverage<100);
+ const result=assessRaw(raw,[raw,{metrics:{...raw.metrics,rank:50}}],settings,clock);assert.equal(result.contributions.relevance.value,1);assert.equal(result.adjustment,'');assert.equal(result.contributions.freshness.estimated,true);
+ const unknown=assessRaw({title:'通用教程',metrics:{}},[],settings,clock);assert.equal(unknown.complete,true);assert.equal(unknown.contributions.attention.value,2.5);assert.equal(unknown.contributions.attention.estimated,true);assert.ok(unknown.coverage<100);
  const old=assessRaw({...raw,title:'AI 教程',published_at:'2025-01-01T00:00:00Z'},[],settings,clock);assert.equal(old.contributions.freshness.value,1);
 });
