@@ -3,7 +3,7 @@ import {SCREEN_WEIGHTS} from './assessment.mjs';
 export const TOPIC_STATUSES=['待验证','待选定','已入选','创作中','制作中','待发布','已发布','待复盘','已归档','已放弃'];
 export const RAW_STATUSES=['待整理','已整理','已转为选题','已忽略','采集异常'];
 export const DIMENSIONS=[['value','目标用户价值',25],['heat','热度与增长趋势',25],['visual','可视化演示能力',20],['difference','内容差异化',15],['timely','时效性',10],['cost','制作成本',5]];
-export const DEFAULT_SETTINGS={rsshub_base_url:DEFAULT_RSSHUB_BASE,screening_weights:SCREEN_WEIGHTS,name:'内容选题工作台',audience:'对该领域感兴趣、希望看到实用内容的普通人',directions:'你的内容方向（在设置中修改）',keywords:'',frequency_minutes:240,auto_collect:true,auto_backup:true,model_provider:'local',model_url:'http://127.0.0.1:8080',model_name:'',weights:Object.fromEntries(DIMENSIONS.map(([id,,w])=>[id,w]))};
+export const DEFAULT_SETTINGS={rsshub_base_url:DEFAULT_RSSHUB_BASE,screening_weights:SCREEN_WEIGHTS,name:'内容选题工作台',profile:'',keywords:'',frequency_minutes:240,auto_collect:true,auto_backup:true,model_provider:'local',model_url:'http://127.0.0.1:8080',model_name:'',weights:Object.fromEntries(DIMENSIONS.map(([id,,w])=>[id,w]))};
 export const now=()=>new Date().toISOString();
 export const json=(value,fallback=null)=>{try{return JSON.parse(value);}catch{return fallback;}};
 export function originalURL(input){if(!input)return '';const u=new URL(input);if(!['https:','http:'].includes(u.protocol)||u.username||u.password)throw new Error('仅支持不含账号密码的 HTTP(S) 链接');return u.href;}
