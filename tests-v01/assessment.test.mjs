@@ -10,15 +10,16 @@ test('automatic screening gives complete scores with explicit priors and materia
  const s=new Store(fs.mkdtempSync(path.join(os.tmpdir(),'studio-auto-score-')));
  try{
  const stamp=new Date().toISOString();
+ s.updateSettings({keywords:'教程'});
  const a=s.addRaw({title:'AI 教程实测',url:'https://example.com/ai',published_at:stamp},{metrics:{platform:'测试',board:'公开榜',rank:3,stats_date:'2026-10-27'}});
  const b=s.addRaw({title:'AI 更新',url:'https://example.com/ai2',published_at:stamp},{metrics:{platform:'测试',board:'公开榜',rank:1,stats_date:'2026-10-27'}});
  let raw=s.bundle().raw,first=raw.find(r=>r.id===a.id).assessment;
- assert.equal(first.scores.length,5);assert.ok(first.scores.every(x=>x.reason));assert.equal(typeof first.total,'number');
- s.updateSettings({screening_weights:{relevance:0,practical:100,attention:0,freshness:0,evidence:0}});
+ assert.equal(first.scores.length,4);assert.ok(first.scores.every(x=>x.reason));assert.equal(typeof first.total,'number');
+ s.updateSettings({screening_weights:{relevance:100,attention:0,freshness:0,evidence:0}});
  raw=s.bundle().raw;assert.ok(raw.find(r=>r.id===a.id).assessment.total>raw.find(r=>r.id===b.id).assessment.total);
- s.updateSettings({screening_weights:{relevance:0,practical:0,attention:100,freshness:0,evidence:0}});
+ s.updateSettings({screening_weights:{relevance:0,attention:100,freshness:0,evidence:0}});
  raw=s.bundle().raw;assert.ok(raw.find(r=>r.id===b.id).assessment.total>raw.find(r=>r.id===a.id).assessment.total);
- const topic=s.saveTopic({title:'领域教程',evidence_ids:[a.id],apply_rule_scores:true});assert.equal(s.topicDetail(topic).scores.length,6);assert.equal(s.topicDetail(topic).screening.version,3);
+ const topic=s.saveTopic({title:'领域教程',evidence_ids:[a.id],apply_rule_scores:true});assert.equal(s.topicDetail(topic).scores.length,6);assert.equal(s.topicDetail(topic).screening.version,4);
  assert.throws(()=>s.updateSettings({screening_weights:{relevance:NaN}}),/权重/);
  }finally{s.close();}
 });
