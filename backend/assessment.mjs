@@ -1,7 +1,7 @@
 export const SCREEN_DIMENSIONS=[['relevance','领域匹配',50],['attention','平台关注度',20],['freshness','内容时效',20],['evidence','资料完整度',10]];
 export const SCREEN_WEIGHTS=Object.fromEntries(SCREEN_DIMENSIONS.map(([k,,w])=>[k,w]));
 const hits=(text,re)=>[...new Set(text.match(re)||[])];
-export function assessRaw(raw,allRaw,settings,clock=Date.now()){
+export function assessRaw(raw,allRaw,settings,clock=Date.now(),storedAttention){
  const title=String(raw.title||''),summary=String(raw.summary||''),text=[title,summary,...(raw.tags||[])].join(' '),m=raw.metrics||{};
  const keywords=String(settings.keywords||'').split(/[,，\n]/).map(k=>k.trim()).filter(Boolean);
  const matched=[];
@@ -18,9 +18,11 @@ export function assessRaw(raw,allRaw,settings,clock=Date.now()){
  }else{
   add('relevance',1,keywords.length?`未命中设置中的领域关键词（${keywords.slice(0,5).join('、')}${keywords.length>5?'等':''}）。可在设置中补充领域词。`:'未配置领域关键词，领域匹配使用最低分。请到设置页填写你的关注方向。');
  }
- const peers=allRaw.filter(r=>{const x=r.metrics||{};return x.platform===m.platform&&x.board===m.board&&(x.stats_date||x.snapshot_at?.slice(0,10)||'')===(m.stats_date||m.snapshot_at?.slice(0,10)||'');});
+ const hasMetric=(m.platform&&Number.isInteger(m.rank)&&m.rank>0)||['plays','hot_value','likes','stars','downloads'].some(key=>Number.isFinite(m[key]));
+ const peers=hasMetric&&!storedAttention?allRaw.filter(r=>{const x=r.metrics||{};return x.platform===m.platform&&x.board===m.board&&(x.stats_date||x.snapshot_at?.slice(0,10)||'')===(m.stats_date||m.snapshot_at?.slice(0,10)||'');}):[];
  const n=Math.max(0,...peers.map(r=>Number(r.metrics?.rank)||0));
- if(m.platform&&Number.isInteger(m.rank)&&m.rank>0&&n>=3)add('attention',Math.round((1+4*(1-(m.rank-1)/(n-1)))*10)/10,`同平台同榜同日期，返回位置 ${m.rank}/${n}。${m.rank_kind==='provider_order'?'第三方页面顺序':m.rank_kind==='list_order'?'热门列表顺序':'榜单位置'}仅作关注信号，不代表增速。来源：${m.provider_url||raw.url}`);
+ if(storedAttention)add('attention',storedAttention.value,storedAttention.reason,storedAttention.observed);
+ else if(m.platform&&Number.isInteger(m.rank)&&m.rank>0&&n>=3)add('attention',Math.round((1+4*(1-(m.rank-1)/(n-1)))*10)/10,`同平台同榜同日期，返回位置 ${m.rank}/${n}。${m.rank_kind==='provider_order'?'第三方页面顺序':m.rank_kind==='list_order'?'热门列表顺序':'榜单位置'}仅作关注信号，不代表增速。来源：${m.provider_url||raw.url}`);
  else {const key=['plays','hot_value','likes','stars','downloads'].find(k=>Number.isFinite(m[k])&&peers.filter(r=>Number.isFinite(r.metrics?.[k])).length>=3);if(key){const valid=peers.filter(r=>Number.isFinite(r.metrics?.[key])),percentile=valid.filter(r=>r.metrics[key]<m[key]).length/Math.max(1,valid.length-1);add('attention',Math.round((1+4*percentile)*10)/10,`同平台同榜日期 ${valid.length} 条材料比较 ${key}=${m[key]}；累计快照不代表增长。`);}else add('attention',2.5,'估计：缺少可比热度样本，使用中性先验 2.5/5，不冒称真实热度；数据充分度降低。',false);}
  const published=Date.parse(raw.published_at||''),snapshot=Date.parse(m.snapshot_at||'');
  if(Number.isFinite(published)&&published<=clock+300000){const h=(clock-published)/3600000;add('freshness',h<=24?5:h<=72?4:h<=168?3:h<=720?2:1,`依据来源发布时间 ${new Date(published).toISOString()}；超过30天仍保留长青内容基础分。`);}

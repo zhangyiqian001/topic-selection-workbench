@@ -24,7 +24,7 @@ const num=v=>v!==''&&v!==null&&v!==undefined&&Number.isFinite(Number(v))?Number(
 const timestamp=v=>{if(!v)return '';const n=typeof v==='number'?v:typeof v==='string'&&/^\d{10,13}$/.test(v)?Number(v):null;const t=n!==null?(n<1e12?n*1000:n):Date.parse(String(v).includes('T')?v:String(v).replace(' ','T')+'+08:00');return Number.isFinite(t)?new Date(t).toISOString():'';};
 const compact=obj=>Object.fromEntries(Object.entries(obj).filter(([,v])=>v!==null&&v!==undefined));
 const current=()=>new Date().toISOString();
-export function platformOf(type){if(type==='rsshub')return 'RSSHub';return type==='douyin'||type==='douyin_daily'?'抖音':['bilibili','bilibili_ranking'].includes(type)?'B站':['xiaohongshu','xiaohongshu_public','xiaohongshu_index'].includes(type)?'小红书':'';}
+export function platformOf(type){if(type==='github')return 'GitHub';if(['rsshub','rss','huggingface'].includes(type))return '文章';return type==='douyin'||type==='douyin_daily'?'抖音':['bilibili','bilibili_ranking'].includes(type)?'B站':['xiaohongshu','xiaohongshu_public','xiaohongshu_index'].includes(type)?'小红书':'';}
 export function parsePlatform(body,type){const data=typeof body==='string'?JSON.parse(body):body,checked=current();
  if(type==='douyin'){
   if(data.status_code!==0)throw new Error('抖音返回错误状态，未取得榜单');
